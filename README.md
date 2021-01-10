@@ -1,4 +1,4 @@
-# DeepLesion_Data
+# DeepLesion_Truth_Samples
 This is a small dataset containing 100 jpg images with their bounding boxes and class labels in the txt file. It is to be used for learning purposes. 
 
 The original source of the images is https://www.nih.gov/news-events/news-releases/nih-clinical-center-releases-dataset-32000-ct-images. 
