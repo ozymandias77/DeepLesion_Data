@@ -1,0 +1,41 @@
+item {
+  id: 1
+  name: 'bone'
+}
+
+item {
+  id: 2
+  name: 'abdomen'
+}
+
+item {
+  id: 3
+  name: 'mediastinum'
+}
+
+item {
+  id: 4
+  name: 'liver'
+}
+
+item {
+  id: 5
+  name: 'lung'
+}
+
+item {
+  id: 6
+  name: 'kidney'
+}
+
+item {
+  id: 7
+  name: 'soft_tissue'
+}
+
+item {
+  id: 8
+  name: 'pelvis'
+}
+
+
