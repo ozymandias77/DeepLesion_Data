@@ -1,13 +1,90 @@
-# DeepLesion_Truth_Samples
+# How to run Object Detection API (TensorFlow 2) On Google Could, with the DeepLesion dataset
+## Download Object Detection API and install it
+Reference link: https://github.com/tensorflow/models/blob/master/research/object_detection/g3doc/tf2.md
+
+-- Make sure you have installed required versions of Python, TensorFlow and Protobuf compiler on your own computer
+
+-- Do "git clone https://github.com/tensorflow/models.git"
+
+-- Do "cd Models/Research"
+
+-- Do "protoc object_detection/protos/*.proto --python_out=."
+
+-- Do "cp object_detection/packages/tf2/setup.py "
+
+-- Do "python -m pip install --use-feature=2020-resolver ." (Please note here: if you want to run locally on your GPU, this step may cause trouble, because it will install the latest version of tensorflow which may not be compatible with your nvidia driver and cuda toolkit.  If the conflict happen, you will need to "pip unistall" the incompatible tensorflow and reinstall your compatile version of tensorflow-gpu)
+
+-- Test: Do "python object_detection/builders/model_builder_tf2_test.py" If you get a "success" in the end, installation is complete
+
+## Convert your data into tfrecord files
+The DeepLesion dataset can be downloaded here: https://www.nih.gov/news-events/news-releases/nih-clinical-center-releases-dataset-32000-ct-images. 
+
+Reference link for data preparation: https://github.com/tensorflow/models/blob/master/research/object_detection/g3doc/using_your_own_dataset.md
+
+Please check out "MakeTFRecords2.py", which specifically generates tfrecords from the DeepLesion dataset, try to run it on your own machine. You also need to make a "label_map.txt" of your dataset. You can find lots of examples in models/research/object_detection/data/
+
+In the folder "data1", are a small set of tfrecord files I generated using "MakeTFRecords2.py", with the corresponding label_map.txt, more details about this folder is below
+
+## Set up your Google cloud account and upload your tfrecord files
+Reference link: https://github.com/tensorflow/models/blob/master/research/object_detection/g3doc/running_pets.md (this is running tensorflow 1.x on the cloud, please only read the part of "Setting up a Project on Google Cloud")
+
+Reference link: https://github.com/tensorflow/models/blob/master/research/object_detection/g3doc/tf2_training_and_evaluation.md (Emphasis on "Google Cloud AI Platform" --> "Training with multiple GPUs" )
+
+After you set up your own bracket on Google Cloud Service, you will have a folder "gs://your_bracket_folder" ("your_bracket_folder" is a temporary name here, you will name your own bracket). Make folder "gs://your_bracket_folder/data" and "gs://your_bracket_folder/model_dir".  Upload your tfrecord files and your label_map.txt to "gs://your_bracket_folder/data" 
+
+## Prepare your pipeline config file and your pre-trained model (from the model zoo) 
+Go to the Model Zoo and choose a model: https://github.com/tensorflow/models/blob/master/research/object_detection/g3doc/tf2_detection_zoo.md
+  For example, I choose "Faster R-CNN ResNet101 V1 1024x1024", download the link on your own computer and unzip it using "tar -xvf ", in the folder "checkpoint", 
+"ckpt-0.???" files are your pre-trained model.
+
+Go to "models/research/object_detection/configs/tf2/" and copy "faster_rcnn_resnet101_v1_1024x1024_coco17_tpu-8.config" to a temp folder. Edit this file:
+
+-- "PATH_TO_BE_CONFIGURED" be replaced by proper path on your cloud bracket folder "gs://your_bracket_folder/data"
+
+-- use_bfloat16: true --> false
+
+-- fine_tune_checkpoint_type: "classification" --> "detection"
+
+-- total_steps: 100000 --> a number you want
+
+Upload ckpt-0.???? files (2 files) and edited faster_rcnn_resnet101_v1_1024x1024_coco17_tpu-8.config to "gs://your_bracket_folder/data"
+
+## Run on Google Cloud AI Platform
+Reference link: https://github.com/tensorflow/models/blob/master/research/object_detection/g3doc/tf2_training_and_evaluation.md
+
+-- Do "cd models/research"
+
+-- Do "cp object_detection/packages/tf2/setup.py ."
+
+-- Do "MODEL_DIR=your_bracket_folder/model_dir"
+
+-- Do "PIPELINE_CONFIG_PATH=your_bracket_folder/data/faster_rcnn_resnet101_v1_1024x1024_coco17_tpu-8.config"
+
+-- Do "gcloud ai-platform jobs submit training object_detection_`date +%m_%d_%Y_%H_%M_%S` \
+    --runtime-version 2.1 \
+    --python-version 3.6 \
+    --job-dir=gs://${MODEL_DIR} \
+    --package-path ./object_detection \
+    --module-name object_detection.model_main_tf2 \
+    --region us-central1 \
+    --master-accelerator count=8,type=nvidia-tesla-v100 \
+    -- \
+    --model_dir=gs://${MODEL_DIR} \
+    --pipeline_config_path=gs://${PIPELINE_CONFIG_PATH}"
+    
+After submitting the job, you may motinor your training in tensorboard, refer to https://github.com/tensorflow/models/blob/master/research/object_detection/g3doc/running_pets.md 
+
+Read the part "Monitoring Progress with Tensorboard"
+
+
+# Folder "data1"
+The folder data1 contains 23 tfrecord files generated by "MakeTFRecords2.py", with parameter "HALF_THICK=0", which means we only take the focus sclice for each lesion.  We can certainly extract more data by setting "HALF_THICK" larger.  If we set "HALF_THICK=-1", we get all slices. In data1, we have 9520 images in total, with 22459 lesions. We used 8-class labels in data1, if you only want 1-class label, please change code in "MakeTFRecords2.py" to make it simpler. We excluded lesions with "type=-1" described in "DL_info.csv" as well. 
+
+
+# Folder "DeepLesion_Truth_Samples"
 This is a small dataset containing 100 jpg images with their bounding boxes and class labels in the txt file. It is to be used for learning purposes. 
-
-The original source of the images is https://www.nih.gov/news-events/news-releases/nih-clinical-center-releases-dataset-32000-ct-images. 
-
 Each jpg image in this dataset is a pre-processed image of the focus slice in the original CT dataset.
-
 The pre-processing of the image is described in the "FAQ.pdf" in the original dataset folder, with A = -1024 and B = 3071.
-
 All images in this folder are 512x512.
-
 The .tru file format is "label  ymin  xmin  ymax  xmax" .
 
