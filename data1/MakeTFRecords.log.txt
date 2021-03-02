@@ -1,0 +1,4 @@
+num_class = 8
+total_lesion = 241225, total_image = 143098, num_test = 22919, num_noise = 0
+SMALL = 25.0, HALF_THICK = 1, select_lesion = 20059, select_image = 10534total number of files = 10534, number of files each shard = 350, number of shards = 30
+use individual dicom window = TRUE
